@@ -1,0 +1,8 @@
+/* Override Bootstrap font toàn app */
+:root, body {
+  --bs-body-font-family: 'Quicksand', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-family: 'Quicksand', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  margin: 0; /* BẮT BUỘC: Để xóa 8px mặc định của trình duyệt */
+  padding: 0;
+  box-sizing: border-box;
+}
