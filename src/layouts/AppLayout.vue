@@ -403,7 +403,7 @@ const logout = () => {
 .search-input {
   width: 100%;
   padding: 17px 16px 17px 44px;
-  background: #FFFFFF;
+  background: #ffffff4d;
   border: 1px solid transparent;
   border-radius: 99px;
   font-size: 0.9rem;
