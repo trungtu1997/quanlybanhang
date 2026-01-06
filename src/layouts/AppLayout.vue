@@ -8,8 +8,8 @@
       <nav class="sidebar-menu">
         <ul>
           <li :class="{ active: $route.path === '/dashboard' }">
-            <router-link to="/dashboard" title="Dashboard">
-              <div class="icon-box">
+            <router-link to="/dashboard">
+              <div class="icon-box" data-tooltip="Dashboard">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                 </svg>
@@ -18,8 +18,8 @@
           </li>
 
           <li :class="{ active: $route.path.startsWith('/products') }">
-            <router-link to="/products" title="Sản phẩm">
-              <div class="icon-box">
+            <router-link to="/products">
+              <div class="icon-box" data-tooltip="Sản phẩm">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
                 </svg>
@@ -28,8 +28,8 @@
           </li>
 
           <li :class="{ active: $route.path.startsWith('/orders') }">
-            <router-link to="/orders" title="Đơn hàng">
-              <div class="icon-box">
+            <router-link to="/orders">
+              <div class="icon-box" data-tooltip="Đơn hàng">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
@@ -38,8 +38,8 @@
           </li>
           
           <li :class="{ active: $route.path.startsWith('/customers') }">
-            <router-link to="/customers" title="Khách hàng">
-              <div class="icon-box">
+            <router-link to="/customers">
+              <div class="icon-box" data-tooltip="Khách hàng">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
@@ -58,12 +58,12 @@
       </nav>
 
       <div class="sidebar-footer">
-          <button class="footer-icon-btn">
+          <button class="footer-icon-btn" data-tooltip="Nhắn tin">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
              </svg>
           </button>
-          <button class="footer-icon-btn">
+          <button class="footer-icon-btn" data-tooltip="Giỏ hàng">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
              </svg>
@@ -74,7 +74,7 @@
     <div class="main-content">
       <header class="header">
         <div class="header-left">
-           <button class="notification-btn">
+           <button class="notification-btn" data-tooltip="Thông báo">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
              </svg>
@@ -89,7 +89,7 @@
             <input type="text" placeholder='Tap "/" to search' class="search-input" />
           </div>
 
-          <button class="hexagon-btn" title="Cài đặt cửa hàng">
+          <button class="hexagon-btn" data-tooltip="Cài đặt cửa hàng">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2L4 6.5V17.5L12 22L20 17.5V6.5L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
@@ -129,7 +129,7 @@
       </header>
 
       <main class="page-content">
-         <slot></slot>
+        <router-view></router-view> 
       </main>
     </div>
   </div>
@@ -604,5 +604,112 @@ const logout = () => {
    .search-bar {
     display: none;
    }
+}
+/* ===================== MODERN TOOLTIP 2.0 ===================== */
+
+/* --- Cấu hình chung cho Tooltip --- */
+[data-tooltip] {
+  position: relative; /* Để tooltip định vị theo phần tử cha */
+}
+
+/* Phần hiển thị chữ (Body của Tooltip) */
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  background-color: #0f172a; /* Màu đậm hơn sidebar một chút để nổi bật */
+  font-family: 'Quicksand',-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 25px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Bóng đổ mịn */
+  z-index: 1000;
+  
+  /* Trạng thái ẩn mặc định */
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.9); /* Thu nhỏ nhẹ */
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Phần mũi tên (Arrow) */
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  border: 5px solid transparent;
+  z-index: 1000;
+  
+  /* Trạng thái ẩn */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+/* --- Hiệu ứng khi Hover --- */
+[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1); /* Phóng to về kích thước chuẩn */
+}
+[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ================= ĐỊNH VỊ THEO VỊ TRÍ (Positioning Logic) ================= */
+
+/* 1. MẶC ĐỊNH & HEADER: Tooltip nằm bên DƯỚI (Dùng cho Header icons) */
+.header [data-tooltip]::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px) scale(0.9); /* Dịch xuống 1 chút */
+}
+.header [data-tooltip]:hover::after {
+  transform: translateX(-50%) translateY(10px) scale(1); /* Giữ nguyên vị trí Y khi hover */
+}
+/* Mũi tên chỉ lên */
+.header [data-tooltip]::before {
+  top: 100%;
+  left: 50%;
+  margin-left: -6px; /* Căn giữa mũi tên */
+  border-bottom-color: #0f172a; /* Tam giác hướng lên, màu trùng background tooltip */
+  transform: translateY(-2px); /* Đẩy sát vào icon */
+}
+
+
+/* 2. SIDEBAR DESKTOP (Màn hình to): Tooltip nằm bên PHẢI */
+@media (min-width: 1025px) {
+  .sidebar [data-tooltip]::after {
+    top: 50%;
+    left: 100%;
+    /* Dịch sang phải và căn giữa theo chiều dọc */
+    transform: translateY(-50%) translateX(12px) scale(0.9); 
+  }
+  
+  .sidebar [data-tooltip]:hover::after {
+    /* Khi hover thì scale lên 1, giữ nguyên vị trí */
+    transform: translateY(-50%) translateX(12px) scale(1);
+  }
+
+  /* Mũi tên chỉ sang trái */
+  .sidebar [data-tooltip]::before {
+    top: 50%;
+    left: 100%;
+    margin-top: -6px;
+    border-right-color: #0f172a;
+    transform: translateX(0px); /* Sát icon */
+  }
+}
+
+/* 3. SIDEBAR MOBILE (Màn hình nhỏ): Tooltip nằm bên TRÊN */
+/* Ẩn tooltip trên màn hình nhỏ hơn 1024px */
+@media (max-width: 1024px) {
+  [data-tooltip]::after,
+  [data-tooltip]::before {
+    display: none !important;
+  }
 }
 </style>

@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // Các component
 import Login from '../components/Login.vue'
 import Dashboard from '../components/Dashboard.vue'
+import Products from '@/components/Products.vue'
 
 // Layout chung (sidebar + header)
 import AppLayout from '../layouts/AppLayout.vue'
@@ -30,6 +31,11 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: Dashboard
+      },
+      {
+        path: '/products',
+        name: 'Products',
+        component: Products
       },
       // Thêm các route khác ở đây sau này
       // Ví dụ:
