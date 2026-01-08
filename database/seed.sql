@@ -51,3 +51,6 @@ INSERT INTO roles (role_name, description) VALUES ('Admin', 'Quản trị viên 
 -- Tạo user admin (Trigger sẽ tự mã hóa 123456 thành chuỗi bảo mật)
 INSERT INTO users (username, password, full_name, role_id) 
 VALUES ('admin', '123456', 'Quản Trị Viên', (SELECT id FROM roles WHERE role_name = 'Admin' LIMIT 1));
+
+-- Cho phép cột supplier_id trong bảng products được để trống
+ALTER TABLE products ALTER COLUMN supplier_id DROP NOT NULL;
