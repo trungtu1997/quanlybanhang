@@ -114,7 +114,7 @@ CREATE TABLE products (
     content TEXT,
     base_unit TEXT NOT NULL,
     status TEXT DEFAULT 'active',
-    is_for_sales BOOLEAN DEFAULT TRUE,
+        is_for_sales BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

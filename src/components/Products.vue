@@ -28,11 +28,7 @@
     <div class="page-header">
       <div class="header-left">
         <h1 class="page-title">{{ pageTitle }}</h1> <ul class="breadcrumb">
-          <li>Trang chủ</li>
-          <li class="separator">/</li>
-          <li class="active">
-            {{ currentTab === 'products' ? 'Sản phẩm' : (currentTab === 'categories' ? 'Danh mục' : 'Thương hiệu') }}
-          </li>
+          <li>Thêm, xóa, cập nhật và xuất file Excel dữ liệu</li>
         </ul>
       </div>
       
@@ -62,7 +58,7 @@
             <div class="hero-text-group">
                 <span class="text-label">Số sản phẩm</span>
                 <h1 class="hero-big-number">
-                    {{ products.filter(p => p.is_active).length }}
+                    {{ products.filter(p => p.status === 'active').length }}
                 </h1>
                 <p class="hero-sub-text">
                     <span class="highlight-green">Đang bán</span> • Có trong kho
@@ -181,9 +177,9 @@
                     {{ product.total_stock || 0 }}
                   </span>
                 </td>
-                <td v-if="role === 'admin'">{{ getDisplayCostPrice(product) }}</td>
+                <td v-if="role === 'admin'">{{ getCostPriceRange(product) }}</td>
                 <td class="font-bold">
-                    {{ getDisplayPrice(product) }}
+                    {{ getPriceRange(product) }}
                 </td>
                 <td class="actions text-right">
                   <button class="action-btn view" @click="openViewModal(product)" title="Xem chi tiết">
@@ -488,66 +484,59 @@
                </div>
            </div>
 
-           <div class="view-info">
-               <div class="view-breadcrumbs">
-                   <span>{{ getCategoryName(viewingProduct.category_id) }}</span> 
-                   <span v-if="viewingProduct.brand_id"> / {{ getBrandName(viewingProduct.brand_id) }}</span>
-               </div>
+            <div class="view-info">
+              <div class="view-breadcrumbs">
+                  <span>{{ getCategoryName(viewingProduct.category_id) }}</span> 
+                  <span v-if="viewingProduct.brand_id"> / {{ getBrandName(viewingProduct.brand_id) }}</span>
+              </div>
 
-               <h1 class="view-product-title">{{ viewingProduct.name }}</h1>
-               
-               <div class="view-meta-row">
-                   <div class="view-meta-item">
-                       <span class="label">SKU:</span>
-                       <span class="value">{{ selectedVariantSKU || viewingProduct.sku || 'N/A' }}</span>
-                   </div>
-                   <div class="view-meta-item status">
-                       <span class="status-dot" :class="selectedVariantStock > 0 ? 'bg-green' : 'bg-red'"></span>
-                       <span class="value">{{ selectedVariantStock > 0 ? selectedVariantStock + ' Còn hàng' : 'Hết hàng' }}</span>
-                   </div>
-                   <div class="view-meta-item">
-                       <span class="label">Trạng thái:</span>
-                       <span class="value">
-                           {{ getStatusText(viewingProduct.status) }}
-                       </span>
-                   </div>
-               </div>
+              <h1 class="view-product-title">{{ viewingProduct.name }}</h1>
 
-               <div class="view-price-large">
-                   {{ formatPrice(selectedVariantPrice || viewingProduct.retail_price) }}
-               </div>
+              <div class="view-price-large">
+                  {{ formatPrice(selectedVariantPrice || getMinPrice(viewingProduct)) }}
+              </div>
 
-               <div class="view-description">
-                   {{ viewingProduct.description || 'Chưa có mô tả ngắn.' }}
-               </div>
+              <div class="view-meta-grid">
+                  <div class="meta-row">
+                      <span class="label">SKU:</span>
+                      <span class="value" >{{ selectedVariantSKU || viewingProduct.product_variants?.[0]?.sku || '---' }}</span>
+                  </div>
+                  <div class="meta-row">
+                      <span class="label">Tình trạng:</span>
+                      <span class="status-badge" :style="{ color: selectedVariantStock > 0 ? '#166534' : '#991b1b', background: selectedVariantStock > 0 ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }">
+                          {{ selectedVariantStock > 0 ? `Còn hàng (${selectedVariantStock})` : 'Hết hàng' }}
+                      </span>
+                  </div>
+                  <div class="meta-row">
+                      <span class="label">Nhà cung cấp:</span>
+                      <span class="value">{{ viewingProduct.suppliers?.name || '---' }}</span>
+                  </div>
+              </div>
 
-               <div class="view-content">
-                   <h3>Nội dung chi tiết:</h3>
-                   {{ viewingProduct.content || 'Chưa có nội dung chi tiết.' }}
-               </div>
+              <div class="variant-details-box" v-if="selectedVariantIndex !== -1" style="margin-bottom: 20px; padding: 10px; border: 1px dashed #d1d5db; border-radius: 8px; font-size: 13px;">
+                  <span style="margin-right: 15px">⚖️ Cân nặng: <strong>{{ selectedVariant.weight || 0 }} g</strong></span>
+                  <span style="margin-right: 15px">🏭 Kho: <strong>{{ getWarehouseName(selectedVariant) }}</strong></span>
+                  <span>📍 Vị trí: <strong>{{ getBinLocation(selectedVariant) }}</strong></span>
+              </div>
 
-               <div class="view-pricing-details" v-if="role === 'admin' && selectedVariantIndex !== -1">
-                   <h3>Chi tiết giá (Admin):</h3>
-                   <div class="pricing-item">Giá vốn: {{ formatPrice(selectedVariant.cost_price) }}</div>
-                   <div class="pricing-item">Giá sỉ: {{ formatPrice(selectedVariant.wholesale_price) }}</div>
-               </div>
+              <div class="view-description">
+                  {{ viewingProduct.description || 'Chưa có mô tả ngắn.' }}
+              </div>
 
-               <div class="divider"></div>
-
-               <div class="view-variants-selector" v-if="viewingVariants.length > 0">
-                   <div class="selector-group">
-                       <span class="selector-label">Chọn biến thể:</span>
-                       <div class="size-boxes">
-                           <button v-for="(v, idx) in viewingVariants" :key="idx"
-                               class="size-box" 
-                               :class="{ selected: selectedVariantIndex === idx }"
-                               @click="selectVariant(idx)">
-                               {{ v.variant_name }}
-                           </button>
-                       </div>
-                   </div>
-               </div>
-           </div>
+              <div class="view-variants-selector" v-if="viewingVariants.length > 0">
+                  <div class="selector-group">
+                      <span class="selector-label">Chọn biến thể:</span>
+                      <div class="size-boxes">
+                          <button v-for="(v, idx) in viewingVariants" :key="idx"
+                              class="size-box" 
+                              :class="{ selected: selectedVariantIndex === idx }"
+                              @click="selectVariant(idx)">
+                              {{ v.variant_name }}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+            </div>
          </div>
       </div>
     </div>
@@ -614,10 +603,10 @@ export default {
   computed: {
     pageTitle() {
         switch (this.currentTab) {
-            case 'products': return 'Quản Lý Sản Phẩm';
-            case 'categories': return 'Quản Lý Danh Mục';
-            case 'brands': return 'Quản Lý Thương Hiệu';
-            default: return 'Quản Lý Sản Phẩm';
+            case 'products': return 'Sản Phẩm';
+            case 'categories': return 'Danh Mục';
+            case 'brands': return 'Thương Hiệu';
+            default: return 'Sản Phẩm';
         }
     },
     // --- FILTER & PAGINATION ---
@@ -681,7 +670,11 @@ export default {
         return 0;
     },
     selectedVariantStock() {
-        if (this.selectedVariantIndex !== -1) return this.viewingVariants[this.selectedVariantIndex].stock?.[0]?.quantity_on_hand || 0;
+        // Nếu đang chọn một biến thể
+        if (this.selectedVariantIndex !== -1 && this.viewingVariants[this.selectedVariantIndex]) {
+            return this.viewingVariants[this.selectedVariantIndex].stock; // Trả về số stock đã tính ở trên
+        }
+        // Nếu không chọn biến thể nào (hoặc sản phẩm đơn), trả về tổng tồn kho của sản phẩm cha
         return this.viewingProduct.total_stock || 0;
     },
     selectedVariantSKU() {
@@ -705,9 +698,10 @@ export default {
         .from('products')
         .select(`
             *,
+            suppliers (name), 
             product_variants (
-                id, sku, variant_name, retail_price, cost_price, wholesale_price,
-                inventories(quantity_on_hand), 
+                id, sku, variant_name, retail_price, cost_price, weight,
+                inventories (quantity_on_hand, bin_location, warehouses(name)), 
                 product_variant_images ( image_url, is_thumbnail ),
                 variant_attribute_values (
                     attribute_values ( value, attributes ( name ) )
@@ -794,9 +788,9 @@ export default {
                     // Map lại dữ liệu tồn kho & vị trí
                     stock: inventory.quantity_on_hand || 0,
                     storage_location: inventory.bin_location || '',
-                    
+                    image_url: v.product_variant_images?.map(i => i.image_url).join(', ') || '',
                     // Map ảnh
-                    image_urls_string: v.product_variant_images.map(i => i.image_url).join('\n'),
+                    
                     
                     // Map thuộc tính (Flatten từ cấu trúc lồng nhau của DB)
                     attributes: v.variant_attribute_values.map(vav => ({
@@ -989,13 +983,37 @@ export default {
         this.viewingProduct = product;
         this.selectedVariantIndex = -1;
         this.activeImage = '';
-        if (product.product_variants) {
-            this.viewingVariants = product.product_variants.map(v => ({
-                ...v, images: v.product_variant_images || []
-            }));
+
+        // Kiểm tra xem sản phẩm có biến thể không
+        if (product.product_variants && product.product_variants.length > 0) {
+            
+            // --- MAP DỮ LIỆU ĐỂ TÍNH TOÁN TỒN KHO CHÍNH XÁC ---
+            this.viewingVariants = product.product_variants.map(v => {
+                // 1. Tính tổng tồn kho từ tất cả các kho (inventories)
+                // Lưu ý: Phải ép kiểu Number() để tránh lỗi cộng chuỗi
+                const totalStock = v.inventories?.reduce((sum, inv) => sum + (Number(inv.quantity_on_hand) || 0), 0) || 0;
+
+                return {
+                    ...v,
+                    stock: totalStock, // Gán giá trị đã tính vào biến stock
+                    
+                    // Lấy tên kho đầu tiên để hiển thị (nếu có)
+                    warehouse_name: v.inventories?.[0]?.warehouses?.name || '---',
+                    bin_location: v.inventories?.[0]?.bin_location || '---',
+                    images: v.product_variant_images || []
+                };
+            });
+
+            // --- QUAN TRỌNG: Tự động chọn biến thể đầu tiên ---
+            // Điều này khiến modal hiển thị ngay thông tin chi tiết thay vì "tổng quan"
+            this.selectVariant(0); 
+            
         } else {
+            // Trường hợp sản phẩm đơn (không có biến thể) hoặc lỗi data
             this.viewingVariants = [];
+            this.selectedVariantIndex = -1;
         }
+        
         this.showViewModal = true;
     },
     selectVariant(index) { this.selectedVariantIndex = index; this.activeImage = ''; },
@@ -1064,7 +1082,45 @@ export default {
             console.error(err);
             Swal.fire('Lỗi', 'Không thể xuất file.', 'error');
         }
-    }
+    },
+    // Hiển thị khoảng giá Min - Max
+    getPriceRange(product) {
+        if (!product.product_variants || product.product_variants.length === 0) return '---';
+        const prices = product.product_variants.map(v => v.retail_price);
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        if (min === max) return this.formatPrice(min);
+        return `${this.formatPrice(min)} - ${this.formatPrice(max)}`;
+    },
+
+    // Lấy giá thấp nhất
+    getMinPrice(product) {
+        if (!product.product_variants || product.product_variants.length === 0) return 0;
+        return Math.min(...product.product_variants.map(v => v.retail_price));
+    },
+
+    // Lấy tên kho
+    getWarehouseName(variant) {
+        return variant.warehouse_name || '---';
+    },
+
+    // Lấy vị trí kệ
+    getBinLocation(variant) {
+        return variant.bin_location || '---';
+    },
+
+    // HÀM MỚI: Hiển thị khoảng Giá nhập (Cost Price)
+    getCostPriceRange(product) {
+        if (!product.product_variants || product.product_variants.length === 0) return '---';
+        
+        // Lấy danh sách giá vốn
+        const prices = product.product_variants.map(v => v.cost_price || 0);
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        
+        if (min === max) return this.formatPrice(min);
+        return `${this.formatPrice(min)} - ${this.formatPrice(max)}`;
+    },
   }
 }
 </script>
@@ -1077,7 +1133,7 @@ export default {
 
 /* HEADER */
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 20px; }
-.page-title { font-size: 28px; font-weight: 700; color: #111827; margin: 0 0 8px 0; }
+.page-title { font-size: 28px; font-weight: 700; color: #111827; margin: 0; }
 .breadcrumb { display: flex; list-style: none; padding: 0; margin: 0; color: #6b7280; font-size: 14px; }
 .breadcrumb .separator { margin: 0 8px; color: #d1d5db; }
 .breadcrumb .active { color: #374151; font-weight: 500; }
@@ -1156,10 +1212,10 @@ export default {
 
 /* DATA TABLE */
 .table-card { background: transparent; border: none; box-shadow: none; overflow-x: auto; margin-bottom: 24px; }
-.product-table { width: 100%; min-width: 900px; border-collapse: separate; border-spacing: 0 12px; }
+.product-table { width: 100%; min-width: 1100px; border-collapse: separate; border-spacing: 0 12px; }
 .product-table th { background: transparent; padding: 0 20px 10px 20px; text-align: center; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; border: none; }
 .product-table th.text-right { text-align: center; }
-.product-table td { background-color: #fff; padding: 16px 24px; vertical-align: middle; font-size: 14px; color: #383838; border: none; }
+.product-table td { background-color: #fff; padding: 16px 2px; text-align: center; vertical-align: middle; font-size: 14px; color: #383838; border: none; }
 .product-table td:first-child { border-top-left-radius: 99px; border-bottom-left-radius: 99px; }
 .product-table td:last-child { border-top-right-radius: 99px; border-bottom-right-radius: 99px; }
 .product-info-cell { display: flex; align-items: center; gap: 12px; }
@@ -1171,8 +1227,8 @@ export default {
 .stock-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .stock-badge.in-stock { background: #ecfdf5; color: #059669; }
 .stock-badge.out-stock { background: #fef2f2; color: #dc2626; }
-.actions { display: flex; justify-content: flex-end; gap: 6px; }
-.action-btn { width: 40px; height: 40px; border-radius: 50%; background: white; color: #6b7280; display: grid; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+.actions { display: flex; justify-content: center; gap: 6px; }
+.action-btn { width: 40px; height: 40px; border: 1px solid #cfcfcf; border-radius: 50%; background: white; color: #6b7280; display: grid; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
 .action-btn:hover { color: #000; background: #f0f0f0; }
 .action-btn svg { width: 16px; height: 16px; }
 .text-right { text-align: right; }
@@ -1255,7 +1311,7 @@ export default {
 .selector-group { margin-bottom: 20px; }
 .selector-label { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; display: block; }
 .size-boxes { display: flex; flex-wrap: wrap; gap: 10px; }
-.size-box { min-width: 44px; height: 40px; padding: 0 12px; border: 1px solid #e5e5e5; background: white; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.size-box { min-width: 44px; height: 40px; border-radius: 99px; padding: 0 12px; border: 1px solid #e5e5e5; background: white; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; transition: all 0.2s; }
 .size-box:hover { border-color: #999; }
 .size-box.selected { background: #000; color: white; border-color: #000; }
 .product-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; }
@@ -1505,5 +1561,10 @@ export default {
 /* Responsive */
 @media (min-width: 1025px) { .search-input {max-width: 500px;} .stat-card {padding: 36px;} }
 @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .view-modal-card { width: 95vw; height: 80vh; } }
-@media (max-width: 768px) { .filter-select{font-size: 11px;} .nav-tab-btn{font-size: 11px;} .products-page { padding: 16px; } .page-header { flex-direction: column; align-items: flex-start; } .header-actions { width: 100%; justify-content: space-between; margin-top: 10px; } .stats-grid { grid-template-columns: 1fr; } .filter-bar { flex-direction: column; } .search-wrapper { width: 100%; } .modal-card { width: 100%; height: 100%; border-radius: 0; } .form-grid { grid-template-columns: 1fr; } .form-group.full-width { grid-column: span 1; } .variant-grid { grid-template-columns: 1fr; } .view-modal-card { height: 100vh; border-radius: 0; } .view-body-grid { flex-direction: column; overflow-y: auto; } .view-gallery { flex: none; height: auto; border-right: none; border-bottom: 1px solid #eee; padding: 20px; } .main-image-wrapper { height: 300px; } .view-info { overflow: visible; padding: 20px; } }
+@media (max-width: 768px) { .filter-select{font-size: 11px; width: 100%;} .nav-tab-btn{font-size: 11px;} .products-page { padding: 16px; } .page-header { flex-direction: column; align-items: flex-start; } .header-actions { width: 100%; justify-content: left; margin-top: 10px; } .stats-grid { grid-template-columns: 1fr; } .filter-bar { flex-direction: column; } .search-wrapper { width: 100%; } .modal-card { width: 100%; height: 100%; border-radius: 0; } .form-grid { grid-template-columns: 1fr; } .form-group.full-width { grid-column: span 1; } .variant-grid { grid-template-columns: 1fr; } .view-modal-card { height: 100vh; border-radius: 0; } .view-body-grid { flex-direction: column; overflow-y: auto; } .view-gallery { flex: none; height: auto; border-right: none; border-bottom: 1px solid #eee; padding: 20px; } .main-image-wrapper { height: 300px; } .view-info { overflow: visible; padding: 20px; } }
+@media (max-width: 429px) {
+  .stat-row{
+    min-width: 130px;
+  }
+}
 </style>
