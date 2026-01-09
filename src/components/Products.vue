@@ -182,6 +182,7 @@
                     {{ getPriceRange(product) }}
                 </td>
                 <td class="actions text-right">
+                  <div class="action-buttons">
                   <button class="action-btn view" @click="openViewModal(product)" title="Xem chi tiết">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   </button>
@@ -191,6 +192,7 @@
                   <button v-if="role === 'admin'" class="action-btn delete" @click="deleteProduct(product.id)" title="Xóa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                   </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -282,14 +284,20 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label>Tên sản phẩm <span class="required">*</span></label>
-                  <input v-model="form.name" required class="form-input" placeholder="Nhập tên sản phẩm..." />
+                  <input 
+                      v-model="form.name" 
+                      @input="updateAllVariantNames" 
+                      required 
+                      class="form-input" 
+                      placeholder="Nhập tên sản phẩm..." 
+                  />
                 </div>
                 <div class="form-group">
                   <label>Slug (URL) <span class="required">*</span></label>
                   <input v-model="form.slug" required class="form-input" placeholder="ten-san-pham" />
                 </div>
                 <div class="form-group">
-                  <label>Danh mục</label>
+                  <label>Danh mục <span class="required">*</span></label>
                   <select v-model="form.category_id" required class="form-select">
                     <option value="">-- Chọn danh mục --</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -459,7 +467,10 @@
 
           <div class="form-footer">
             <button type="button" @click="showForm = false" class="btn-cancel">Hủy bỏ</button>
-            <button type="submit" class="btn-save">Lưu Sản Phẩm</button>
+            <button type="submit" class="btn-save" :disabled="isSaving" :style="{ opacity: isSaving ? 0.7 : 1 }">
+                <span v-if="isSaving">Đang xử lý...</span>
+                <span v-else>Lưu Sản Phẩm</span>
+            </button>
           </div>
         </form>
       </div>
@@ -472,8 +483,21 @@
            
            <div class="view-gallery">
                <div class="main-image-wrapper">
-                    <img :src="currentMainImage" class="view-main-img">
-               </div>
+                    <img 
+                        v-if="currentMainImage" 
+                        :src="currentMainImage" 
+                        class="view-main-img"
+                    >
+
+                    <div v-else class="no-image-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <p>Sản phẩm này chưa có hình,<br>vui lòng bổ sung thêm.</p>
+                    </div>
+                </div>
                <div class="thumb-list">
                    <div v-for="(img, idx) in allImages" :key="idx" 
                         class="thumb-item" 
@@ -490,37 +514,82 @@
                   <span v-if="viewingProduct.brand_id"> / {{ getBrandName(viewingProduct.brand_id) }}</span>
               </div>
 
-              <h1 class="view-product-title">{{ viewingProduct.name }}</h1>
+              <h1 class="view-product-title">
+                  {{ viewingProduct.name }}
+                  <span class="title-separator">•</span>
+                  <span class="status-text" :class="viewingProduct.status">
+                      {{ getStatusLabel(viewingProduct.status) }}
+                  </span>
+              </h1>
 
               <div class="view-price-large">
                   {{ formatPrice(selectedVariantPrice || getMinPrice(viewingProduct)) }}
+                  <span class="unit-badge">/ {{ viewingProduct.base_unit || 'Cái' }}</span>
               </div>
 
               <div class="view-meta-grid">
                   <div class="meta-row">
-                      <span class="label">SKU:</span>
+                      <span class="label">SKU: </span>
                       <span class="value" >{{ selectedVariantSKU || viewingProduct.product_variants?.[0]?.sku || '---' }}</span>
                   </div>
                   <div class="meta-row">
-                      <span class="label">Tình trạng:</span>
-                      <span class="status-badge" :style="{ color: selectedVariantStock > 0 ? '#166534' : '#991b1b', background: selectedVariantStock > 0 ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }">
+                      <span class="label">Barcode: </span>
+                      <span class="value">{{ selectedVariant.barcode || '---' }}</span>
+                  </div>
+                  <div class="meta-row">
+                      <span class="label">Tình trạng: </span>
+                      <span class="status-badge" :style="{ color: selectedVariantStock > 0 ? '#166534' : '#991b1b', background: selectedVariantStock > 0 ? '#dcfce7' : '#fee2e2', padding: '4px 8px', borderRadius: '99px', fontSize: '12px', fontWeight: 'bold' }">
                           {{ selectedVariantStock > 0 ? `Còn hàng (${selectedVariantStock})` : 'Hết hàng' }}
                       </span>
                   </div>
                   <div class="meta-row">
-                      <span class="label">Nhà cung cấp:</span>
+                      <span class="label">Nhà cung cấp: </span>
                       <span class="value">{{ viewingProduct.suppliers?.name || '---' }}</span>
                   </div>
               </div>
 
-              <div class="variant-details-box" v-if="selectedVariantIndex !== -1" style="margin-bottom: 20px; padding: 10px; border: 1px dashed #d1d5db; border-radius: 8px; font-size: 13px;">
-                  <span style="margin-right: 15px">⚖️ Cân nặng: <strong>{{ selectedVariant.weight || 0 }} g</strong></span>
-                  <span style="margin-right: 15px">🏭 Kho: <strong>{{ getWarehouseName(selectedVariant) }}</strong></span>
-                  <span>📍 Vị trí: <strong>{{ getBinLocation(selectedVariant) }}</strong></span>
+              <div class="variant-details-box" v-if="selectedVariantIndex !== -1">
+                  <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
+                      <path d="M104 96H56c-13.3 0-24 10.7-24 24v104H8c-4.4 0-8 3.6-8 8v48c0 4.4 3.6 8 8 8h24v104c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zm352 0h-48c-13.3 0-24 10.7-24 24v272c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zM160 232h192v48H160z"/>
+                    </svg> Cân nặng: <strong>{{ selectedVariant.weight || 0 }} gr</strong>
+                  </span>
+                  <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                      <path d="m3.3 7 8.7 5 8.7-5"/>
+                      <path d="M12 22V12"/>
+                    </svg> Kho: <strong>{{ getWarehouseName(selectedVariant) }}</strong>
+                  </span>
+                  <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg">
+                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg> Vị trí: <strong>{{ getBinLocation(selectedVariant) }}</strong>
+                  </span>
               </div>
 
               <div class="view-description">
                   {{ viewingProduct.description || 'Chưa có mô tả ngắn.' }}
+              </div>
+
+              <div class="view-content-section" v-if="viewingProduct.content">
+                  <h3 class="content-heading">Thông tin chi tiết</h3>
+                  <div class="content-body">
+                      {{ viewingProduct.content }}
+                  </div>
+              </div>
+
+              <div class="view-pricing-table" v-if="role === 'admin' && selectedVariantIndex !== -1">
+                  <div class="pricing-col">
+                      <span class="lbl">Giá nhập (Vốn)</span>
+                      <span class="val text-red">{{ formatPrice(selectedVariant.cost_price) }}</span>
+                  </div>
+                  <div class="pricing-col">
+                      <span class="lbl">Giá bán sỉ</span>
+                      <span class="val text-blue">{{ formatPrice(selectedVariant.wholesale_price) }}</span>
+                  </div>
+                  <div class="pricing-col">
+                      <span class="lbl">Giá bán lẻ</span>
+                      <span class="val">{{ formatPrice(selectedVariant.retail_price) }}</span>
+                  </div>
               </div>
 
               <div class="view-variants-selector" v-if="viewingVariants.length > 0">
@@ -552,6 +621,7 @@ import * as XLSX from 'xlsx'
 export default {
   data() {
     return {
+      isSaving: false, // <--- Thêm dòng này vào đầu object data
       currentTab: 'products',
 
       // Data Arrays
@@ -647,7 +717,7 @@ export default {
         if (this.viewingVariants.length > 0 && this.viewingVariants[0].images?.length > 0) {
              return this.viewingVariants[0].images[0].image_url;
         }
-        return 'https://via.placeholder.com/500x500?text=No+Image';
+        return null; // Trả về null để biết là không có ảnh
     },
 
     allImages() {
@@ -692,6 +762,15 @@ export default {
         this.warehouses = data || [];
     },
 
+    getStatusLabel(status) {
+        switch(status) {
+            case 'active': return 'Đang bán';
+            case 'inactive': return 'Ngừng bán';
+            case 'draft': return 'Bản nháp';
+            default: return '---';
+        }
+    },
+
     async loadProducts() {
       // Query lấy thêm inventories để tính tổng tồn kho
       const { data, error } = await supabase
@@ -700,7 +779,7 @@ export default {
             *,
             suppliers (name), 
             product_variants (
-                id, sku, variant_name, retail_price, cost_price, weight,
+                id, sku, barcode, variant_name, retail_price, cost_price, wholesale_price, weight,
                 inventories (quantity_on_hand, bin_location, warehouses(name)), 
                 product_variant_images ( image_url, is_thumbnail ),
                 variant_attribute_values (
@@ -821,36 +900,36 @@ export default {
     // 3. SAVE PRODUCT (LOGIC LƯU VÀO KHO)
     // ============================================================
     async saveProduct() {
+      // 1. Chặn click liên tục
+      if (this.isSaving) return; 
+      this.isSaving = true;
+
       try {
-        // 1. VALIDATION: Kiểm tra các trường bắt buộc
+        // --- VALIDATION (Giữ nguyên) ---
         if (!this.form.name || !this.form.category_id || !this.form.brand_id) {
+            this.isSaving = false; // Nhớ tắt loading nếu lỗi
             return Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ: Tên, Danh mục và Thương hiệu!', 'error');
         }
-
-        // --- VALIDATE KHO KHÔNG ĐƯỢC ĐỂ TRỐNG ---
         if (!this.form.warehouse_id) {
+            this.isSaving = false;
             return Swal.fire('Lỗi', 'Vui lòng chọn Kho nhập hàng!', 'error');
         }
 
-        // 2. TẠO PAYLOAD
+        // --- TẠO PAYLOAD SẢN PHẨM CHA ---
         const productPayload = {
-           name: this.form.name,
-           slug: this.form.slug || this.generateSlug(this.form.name),
-           category_id: this.form.category_id,
-           brand_id: this.form.brand_id, 
-           supplier_id: this.form.supplier_id || null, 
-           description: this.form.description,
-           content: this.form.content,
-           base_unit: this.form.base_unit,
-           // Logic mới: Status quyết định tất cả
-           status: this.form.status, 
-            
-           // Tự động tính is_for_sales dựa trên status
-           // Nếu status là 'active' thì is_for_sales = true, ngược lại là false
-           is_for_sales: this.form.status === 'active'
+            name: this.form.name,
+            slug: this.form.slug || this.generateSlug(this.form.name),
+            category_id: this.form.category_id,
+            brand_id: this.form.brand_id, 
+            supplier_id: this.form.supplier_id || null, 
+            description: this.form.description,
+            content: this.form.content,
+            base_unit: this.form.base_unit,
+            status: this.form.status, 
+            is_for_sales: this.form.status === 'active'
         };
 
-        // 3. LƯU SẢN PHẨM CHA
+        // --- LƯU SẢN PHẨM CHA ---
         let productId;
         
         if (this.editingProduct) {
@@ -863,12 +942,20 @@ export default {
             productId = data.id;
         }
 
-        // 4. XỬ LÝ BIẾN THỂ (Xóa cũ thêm mới để đồng bộ)
-        await supabase.from('product_variants').delete().eq('product_id', productId);
+        // --- XÓA BIẾN THỂ CŨ ---
+        const { error: deleteError } = await supabase.from('product_variants').delete().eq('product_id', productId);
+        if (deleteError) {
+            console.error("Lỗi xóa biến thể cũ:", deleteError);
+            throw new Error("Không thể cập nhật biến thể do ràng buộc dữ liệu.");
+        }
 
+        // =========================================================
+        // PHẦN TỐI ƯU TỐC ĐỘ CAO (Dùng Promise.all)
+        // =========================================================
         if (this.form.variants.length > 0) {
-            for (const v of this.form.variants) {
-                // a. Insert Variants
+            const variantPromises = this.form.variants.map(async (v) => {
+                
+                // A. TẠO BIẾN THỂ (Chạy song song OK)
                 const { data: vData, error: vError } = await supabase.from('product_variants').insert({
                     product_id: productId,
                     sku: v.sku,
@@ -883,25 +970,23 @@ export default {
                 if (vError) throw vError;
                 const variantId = vData.id;
 
-                // --- B. LƯU TỒN KHO VÀO BẢNG INVENTORIES ---
-                // Dùng warehouse_id từ Form
-                const inventoryPayload = {
-                    warehouse_id: this.form.warehouse_id,
-                    product_variant_id: variantId,
-                    quantity_on_hand: Number(v.stock) || 0,
-                    bin_location: v.storage_location || null
-                };
-                
-                // Upsert vào kho (Conflict dựa trên warehouse_id + product_variant_id)
-                const { error: invError } = await supabase
-                    .from('inventories')
-                    .upsert(inventoryPayload, { onConflict: 'warehouse_id, product_variant_id' });
-                
-                if (invError) console.error("Lỗi lưu kho:", invError);
+                // B. CÁC TÁC VỤ CON CỦA BIẾN THỂ
+                const subTasks = [];
 
-                // c. Lưu Ảnh
-                if (v.image_urls_string) {
-                    const urls = v.image_urls_string.split(/[\n,]+/).map(u => u.trim()).filter(u => u !== '');
+                // 1. Lưu Tồn kho
+                subTasks.push(
+                    supabase.from('inventories')
+                    .upsert({
+                        warehouse_id: this.form.warehouse_id,
+                        product_variant_id: variantId,
+                        quantity_on_hand: Number(v.stock) || 0,
+                        bin_location: v.storage_location || null
+                    }, { onConflict: 'warehouse_id, product_variant_id' })
+                );
+
+                // 2. Lưu Ảnh
+                if (v.image_url) {
+                    const urls = v.image_url.split(',').map(u => u.trim()).filter(u => u !== '');
                     if (urls.length > 0) {
                         const imagesInsert = urls.map((url, idx) => ({
                             product_variant_id: variantId,
@@ -909,38 +994,47 @@ export default {
                             is_thumbnail: idx === 0,
                             sort_order: idx
                         }));
-                        await supabase.from('product_variant_images').insert(imagesInsert);
+                        subTasks.push(supabase.from('product_variant_images').insert(imagesInsert));
                     }
                 }
-                
-                // d. Lưu Thuộc tính (Attributes Logic)
+
+                // 3. Lưu Thuộc tính (Xử lý an toàn để tránh trùng lặp)
                 if (v.attributes && v.attributes.length > 0) {
-                    for (const attr of v.attributes) {
-                        if (!attr.attribute_name || !attr.attribute_value) continue;
-                        
-                        // Xử lý Tên
-                        let attributeId;
-                        const { data: existingAttr } = await supabase.from('attributes').select('id').ilike('name', attr.attribute_name.trim()).maybeSingle();
-                        if (existingAttr) attributeId = existingAttr.id;
-                        else {
-                            const { data: newAttr } = await supabase.from('attributes').insert({ name: attr.attribute_name.trim() }).select('id').single();
-                            attributeId = newAttr.id;
-                        }
+                    const attrTask = async () => {
+                        for (const attr of v.attributes) {
+                            if (!attr.attribute_name || !attr.attribute_value) continue;
+                            
+                            // Tìm hoặc Tạo Attribute (Màu, Size)
+                            let attributeId;
+                            const { data: existingAttr } = await supabase.from('attributes').select('id').ilike('name', attr.attribute_name.trim()).maybeSingle();
+                            if (existingAttr) attributeId = existingAttr.id;
+                            else {
+                                const { data: newAttr } = await supabase.from('attributes').insert({ name: attr.attribute_name.trim() }).select('id').single();
+                                attributeId = newAttr.id;
+                            }
 
-                        // Xử lý Giá trị
-                        let valueId;
-                        const { data: existingVal } = await supabase.from('attribute_values').select('id').eq('attribute_id', attributeId).ilike('value', attr.attribute_value.trim()).maybeSingle();
-                        if (existingVal) valueId = existingVal.id;
-                        else {
-                            const { data: newVal } = await supabase.from('attribute_values').insert({ attribute_id: attributeId, value: attr.attribute_value.trim() }).select('id').single();
-                            valueId = newVal.id;
-                        }
+                            // Tìm hoặc Tạo Value (Đỏ, XL)
+                            let valueId;
+                            const { data: existingVal } = await supabase.from('attribute_values').select('id').eq('attribute_id', attributeId).ilike('value', attr.attribute_value.trim()).maybeSingle();
+                            if (existingVal) valueId = existingVal.id;
+                            else {
+                                const { data: newVal } = await supabase.from('attribute_values').insert({ attribute_id: attributeId, value: attr.attribute_value.trim() }).select('id').single();
+                                valueId = newVal.id;
+                            }
 
-                        // Link vào biến thể
-                        await supabase.from('variant_attribute_values').insert({ product_variant_id: variantId, attribute_value_id: valueId });
-                    }
+                            // Link vào biến thể
+                            await supabase.from('variant_attribute_values').insert({ product_variant_id: variantId, attribute_value_id: valueId });
+                        }
+                    };
+                    subTasks.push(attrTask());
                 }
-            }
+
+                // Chờ các tác vụ con xong
+                await Promise.all(subTasks);
+            });
+
+            // Chờ TẤT CẢ biến thể xong
+            await Promise.all(variantPromises);
         }
 
         Swal.fire('Thành công', 'Lưu sản phẩm thành công!', 'success');
@@ -949,7 +1043,9 @@ export default {
 
       } catch (err) {
         console.error("Lỗi Save:", err);
-        Swal.fire('Lỗi', err.message, 'error');
+        Swal.fire('Lỗi', err.message || 'Có lỗi xảy ra', 'error');
+      } finally {
+        this.isSaving = false; // Mở lại nút bấm
       }
     },
 
@@ -959,7 +1055,7 @@ export default {
         sku: '', barcode: '', weight: 0, 
         storage_location: '', stock: 0, // Các biến mới
         variant_name: '', retail_price: 0, cost_price: 0, wholesale_price: 0,
-        attributes: [], image_urls_string: ''
+        attributes: [], image_url: ''
       });
     },
     removeVariant(index) { this.form.variants.splice(index, 1); },
@@ -973,8 +1069,43 @@ export default {
     },
     updateVariantName(index) {
         const v = this.form.variants[index];
+        const parts = [];
+
+        // 1. Đưa tên sản phẩm vào trước (nếu có)
+        if (this.form.name && this.form.name.trim() !== '') {
+            parts.push(this.form.name.trim());
+        }
+
+        // 2. Đưa các thuộc tính vào sau
         if (v.attributes && v.attributes.length > 0) {
-            v.variant_name = v.attributes.map(a => a.attribute_value).join(' - ');
+            // Lấy ra các giá trị thuộc tính (ví dụ: Đỏ, XL)
+            const attrValues = v.attributes
+                .map(a => a.attribute_value ? a.attribute_value.trim() : '')
+                .filter(val => val !== ''); // Loại bỏ giá trị rỗng
+
+            if (attrValues.length > 0) {
+                // Nối các thuộc tính lại với nhau bằng dấu gạch ngang
+                parts.push(attrValues.join(' - '));
+            }
+        }
+
+        // 3. Ghép tất cả lại (Tên SP - Thuộc tính 1 - Thuộc tính 2)
+        v.variant_name = parts.join(' - ');
+    },
+    // Hàm này sẽ chạy khi bạn gõ tên sản phẩm
+    updateAllVariantNames() {
+        // 1. Tự động tạo SLUG nếu đang nhập tên
+        // Chỉ tự động tạo khi người dùng CHƯA tự nhập slug riêng (hoặc slug đang trống)
+        // Hoặc bạn có thể cho nó luôn luôn tự động cập nhật theo tên
+        if (this.form.name) {
+            this.form.slug = this.generateSlug(this.form.name);
+        }
+
+        // 2. Cập nhật tên biến thể (Logic cũ giữ nguyên)
+        if (this.form.variants && this.form.variants.length > 0) {
+            this.form.variants.forEach((v, index) => {
+                this.updateVariantName(index);
+            });
         }
     },
 
@@ -1049,7 +1180,19 @@ export default {
     getStatusText(s) { return s === 'active' ? 'Đang bán' : 'Ngừng bán'; },
     getStockClass(s) { return s > 0 ? 'stock-badge in-stock' : 'stock-badge out-stock'; },
     checkIsColor(attr) { attr.is_color = attr.attribute_name.toLowerCase().includes('màu'); },
-    generateSlug(text) { return text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''); },
+    generateSlug(str) {
+      if (!str) return '';
+      
+      return str
+        .toLowerCase() // 1. Chuyển thành chữ thường
+        .normalize('NFD') // 2. Tách dấu ra khỏi ký tự (Ví dụ: ô -> o + dấu ^)
+        .replace(/[\u0300-\u036f]/g, '') // 3. Xóa các ký tự dấu vừa tách
+        .replace(/[đĐ]/g, 'd') // 4. Xử lý chữ đ/Đ riêng (vì nó không phải là dấu)
+        .replace(/[^a-z0-9\s-]/g, '') // 5. Xóa hết các ký tự đặc biệt còn lại (giữ lại chữ, số, khoảng trắng, gạch ngang)
+        .trim() // 6. Cắt khoảng trắng đầu cuối
+        .replace(/\s+/g, '-') // 7. Thay khoảng trắng bằng dấu gạch ngang
+        .replace(/-+/g, '-'); // 8. Xóa các dấu gạch ngang liên tiếp (ví dụ: -- thành -)
+    },
     
     exportToExcel() {
         try {
@@ -1210,30 +1353,151 @@ export default {
 .filter-select:hover { border-color: #d1d5db; }
 .filter-select:focus { border-color: #000; }
 
-/* DATA TABLE */
-.table-card { background: transparent; border: none; box-shadow: none; overflow-x: auto; margin-bottom: 24px; }
-.product-table { width: 100%; min-width: 1100px; border-collapse: separate; border-spacing: 0 12px; }
-.product-table th { background: transparent; padding: 0 20px 10px 20px; text-align: center; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; border: none; }
+/* =========================================
+   1. CẤU TRÚC BẢNG & DÒNG (PILL ROW)
+   ========================================= */
+.table-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-bottom: 24px;
+  padding: 4px;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px; /* Khoảng hở để tạo dòng rời */
+}
+
+/* Header */
+.product-table th {
+  background: transparent;
+  padding: 0 20px 10px 20px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+}
 .product-table th.text-right { text-align: center; }
-.product-table td { background-color: #fff; padding: 16px 2px; text-align: center; vertical-align: middle; font-size: 14px; color: #383838; border: none; }
-.product-table td:first-child { border-top-left-radius: 99px; border-bottom-left-radius: 99px; }
-.product-table td:last-child { border-top-right-radius: 99px; border-bottom-right-radius: 99px; }
-.product-info-cell { display: flex; align-items: center; gap: 12px; }
-.product-details { display: flex; flex-direction: column; }
+
+/* =========================================
+   2. STYLE CHO CÁC Ô (TD) - VIÊN THUỐC 99PX
+   ========================================= */
+.product-table td {
+  background-color: #ffffff;
+  padding: 16px 10px;
+  text-align: center;
+  vertical-align: middle; /* Căn giữa dọc tự nhiên */
+  font-size: 12px;
+  color: #383838;
+  
+  /* Viền trên dưới */
+  border-top: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+  border-left: none;
+  border-right: none;
+}
+
+/* --- BO TRÒN 99PX ĐẦU TRÁI --- */
+.product-table td:first-child {
+  border-left: 1px solid #f3f4f6;
+  border-top-left-radius: 99px;  /* Bo tròn ủng */
+  border-bottom-left-radius: 99px;
+  padding-left: 20px; /* Thêm chút padding để nội dung không sát mép bo */
+}
+
+/* --- BO TRÒN 99PX ĐẦU PHẢI --- */
+.product-table td:last-child {
+  border-right: 1px solid #f3f4f6;
+  border-top-right-radius: 99px; /* Bo tròn ủng */
+  border-bottom-right-radius: 99px;
+  padding-right: 20px; /* Thêm chút padding để nút không sát mép bo */
+}
+
+/* =========================================
+   3. CỘT HÀNH ĐỘNG (FIX LỖI LỆCH TÂM)
+   ========================================= */
+.product-table td.actions {
+  display: table-cell !important;
+  vertical-align: middle !important;
+  text-align: right;
+  min-width: 140px;
+}
+
+/* Div bọc nút bấm */
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  
+  /* --- FIX QUAN TRỌNG --- */
+  /* Đã xóa dòng transform: translateY(...) đi */
+  /* Bây giờ nó sẽ nằm chính xác ở giữa tâm dòng theo tính toán của trình duyệt */
+  transform: none; 
+}
+
+/* Nút bấm */
+.action-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: white;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.action-btn:hover {
+  color: #000;
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.action-btn svg { width: 16px; height: 16px; }
+
+/* =========================================
+   4. HIỆU ỨNG HOVER
+   ========================================= */
+.product-table tbody tr {
+  transition: transform 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.02));
+}
+
+.product-table tbody tr:hover:not(.empty-state) {
+  transform: translateY(-4px); 
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.08));
+  z-index: 10;
+}
+
+.product-table tbody tr:hover td {
+  border-color: #e5e7eb;
+  background-color: #fafafa;
+}
+
+/* Các class phụ trợ giữ nguyên */
+.product-info-cell { display: flex; align-items: center; gap: 12px; text-align: left; }
+.product-details { display: flex; flex-direction: column; align-items: flex-start; }
 .product-name-text { font-weight: 600; color: #111827; }
 .variant-count-text { font-size: 11px; color: #9ca3af; }
-.sku-tag { padding: 4px 8px; border-radius: 0.2rem; font-size: 12px; }
-.category-tag { background: #f3f4f6; color: #4b5563; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid #e5e7eb; }
-.stock-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.sku-tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; color: #374151; font-weight: 500;}
+.category-tag { background: #f3f4f6; color: #4b5563; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid #e5e7eb; white-space: nowrap;}
+.stock-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;}
 .stock-badge.in-stock { background: #ecfdf5; color: #059669; }
 .stock-badge.out-stock { background: #fef2f2; color: #dc2626; }
-.actions { display: flex; justify-content: center; gap: 6px; }
-.action-btn { width: 40px; height: 40px; border: 1px solid #cfcfcf; border-radius: 50%; background: white; color: #6b7280; display: grid; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-.action-btn:hover { color: #000; background: #f0f0f0; }
-.action-btn svg { width: 16px; height: 16px; }
-.text-right { text-align: right; }
 .font-bold { font-weight: 600; }
-
 /* Pagination */
 .pagination-wrapper { display: flex; justify-content: space-between; align-items: center; padding: 0 8px; flex-wrap: wrap; gap: 10px; }
 .pagination-controls { display: flex; gap: 8px; }
@@ -1291,9 +1555,9 @@ export default {
 .main-image-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; background: white; padding: 10px; }
 .view-main-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .thumb-list { display: flex; gap: 10px; justify-content: center; height: 80px; }
-.thumb-item { width: 60px; height: 100%; border: 1px solid transparent; cursor: pointer; opacity: 0.6; transition: all 0.2s; }
-.thumb-item.active { opacity: 1; border: 1px solid #000; }
-.thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+.thumb-item { width: 60px; height: 60px; border: 1px solid transparent; cursor: pointer; opacity: 0.6; transition: all 0.2s; }
+.thumb-item.active { opacity: 1; border: 1px solid #000; border-radius: 50%; }
+.thumb-item img { width: 100%; height: 100%; object-fit: cover; max-width: 60px; max-height: 60px; border-radius: 50%}
 .view-info { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; }
 .view-breadcrumbs { font-size: 12px; text-transform: uppercase; color: #999; margin-bottom: 10px; letter-spacing: 0.5px; }
 .view-product-title { font-size: 26px; font-weight: 500; margin: 0 0 15px 0; line-height: 1.3; }
@@ -1317,6 +1581,52 @@ export default {
 .product-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; }
 .product-img { width: 100%; height: 100%; object-fit: cover; }
 .product-avatar .mono-avatar { width: 100%; height: 100%; background: #f3f4f6; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.title-separator {
+    margin: 0 10px;
+    color: #9ca3af;
+    font-size: 20px;
+}
+
+.status-text {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 2px 0;
+    text-transform: uppercase;
+}
+
+/* Màu sắc theo trạng thái */
+.status-text.active { color: #16a34a; }   /* Xanh lá */
+.status-text.inactive { color: #dc2626; } /* Đỏ */
+.status-text.draft { color: #6b7280; }    /* Xám */
+
+/* --- Style cho Đơn vị tính --- */
+.unit-badge {
+    font-size: 16px;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+/* --- Style cho Nội dung chi tiết --- */
+.view-content-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.content-heading {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #111827;
+    text-transform: uppercase;
+}
+
+.content-body {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.6;
+    white-space: pre-line; /* Giữ nguyên xuống dòng của văn bản */
+}
 /* =========================================
    NEW HERO BANNER (REPLACE STATS GRID)
    ========================================= */
@@ -1539,7 +1849,99 @@ export default {
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0, 0, 0, 0.8);
     }
 }
+/* Style cho bảng giá Admin trong Modal */
+.view-pricing-table {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #f9fafb; /* Nền xanh nhạt dễ chịu */
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+}
 
+.pricing-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Căn giữa */
+}
+
+.pricing-col:last-child {
+    border-right: none;
+}
+
+.pricing-col .lbl {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #000000;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.pricing-col .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.pricing-col .val.text-red { color: #dc2626; } /* Màu đỏ cho giá vốn */
+.pricing-col .val.text-blue { color: #2563eb; } /* Màu xanh cho giá sỉ */
+.variant-details-box {
+  display: flex;           /* Xếp các phần tử nằm ngang */
+  flex-wrap: wrap;         /* Quan trọng: Tự động xuống dòng nếu hết chỗ -> Không bị mất chữ */
+  align-items: center;     /* Căn giữa theo chiều dọc */
+  gap: 12px 24px;          /* Khoảng cách: 12px hàng dọc, 24px hàng ngang */
+  
+  /* Style cũ của bạn */
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background-color: #f9fafb; /* Thêm màu nền nhẹ cho đẹp */
+  font-size: 13px;
+  color: #374151;
+}
+
+.variant-details-box svg {
+    position: relative;
+    top: 3px;
+    margin-right: 5px;
+}
+.view-meta-grid {
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.view-meta-grid .meta-row {
+    margin-bottom: 10px;
+}
+/* Style cho khung thông báo không có ảnh */
+.no-image-state {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6; /* Xám rất nhạt */
+    border: 2px dashed #d1d5db; /* Viền nét đứt */
+    border-radius: 8px;
+    color: #6b7280;
+    text-align: center;
+    padding: 20px;
+}
+
+.no-image-state svg {
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.no-image-state p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 500;
+}
 /* Responsive cho Mobile */
 @media (max-width: 900px) {
     .hero-stats-banner {

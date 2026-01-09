@@ -54,3 +54,34 @@ VALUES ('admin', '123456', 'Quản Trị Viên', (SELECT id FROM roles WHERE rol
 
 -- Cho phép cột supplier_id trong bảng products được để trống
 ALTER TABLE products ALTER COLUMN supplier_id DROP NOT NULL;
+
+-- Xóa ràng buộc khóa ngoại cũ
+ALTER TABLE inventories 
+DROP CONSTRAINT inventories_product_variant_id_fkey;
+
+-- Thêm ràng buộc mới có tính năng "ON DELETE CASCADE" (Xóa cha chết con)
+ALTER TABLE inventories 
+ADD CONSTRAINT inventories_product_variant_id_fkey 
+FOREIGN KEY (product_variant_id) 
+REFERENCES product_variants (id) 
+ON DELETE CASCADE;
+
+-- 1. Xử lý bảng liên kết Thuộc Tính (Thường hay bị lỗi ở đây nhất)
+ALTER TABLE variant_attribute_values
+DROP CONSTRAINT IF EXISTS variant_attribute_values_product_variant_id_fkey;
+
+ALTER TABLE variant_attribute_values
+ADD CONSTRAINT variant_attribute_values_product_variant_id_fkey
+FOREIGN KEY (product_variant_id)
+REFERENCES product_variants(id)
+ON DELETE CASCADE;
+
+-- 2. Xử lý bảng Ảnh biến thể
+ALTER TABLE product_variant_images
+DROP CONSTRAINT IF EXISTS product_variant_images_product_variant_id_fkey;
+
+ALTER TABLE product_variant_images
+ADD CONSTRAINT product_variant_images_product_variant_id_fkey
+FOREIGN KEY (product_variant_id)
+REFERENCES product_variants(id)
+ON DELETE CASCADE;
