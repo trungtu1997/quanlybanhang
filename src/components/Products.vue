@@ -1477,8 +1477,8 @@ export default {
 }
 
 .product-table tbody tr:hover:not(.empty-state) {
-  transform: translateY(-4px); 
-  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.08));
+  transform: translateY(-2px); 
+  filter: drop-shadow(0 5px 4px rgba(90, 90, 90, 0.08));
   z-index: 10;
 }
 
